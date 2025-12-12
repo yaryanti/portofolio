@@ -151,6 +151,14 @@ class ImageSlider {
     }
     
     init() {
+        // Hide controls if only one image
+        if (this.images.length <= 1) {
+            this.prevBtn.style.display = 'none';
+            this.nextBtn.style.display = 'none';
+            this.dotsContainer.style.display = 'none';
+            return;
+        }
+        
         // Create dots
         this.images.forEach((_, index) => {
             const dot = document.createElement('span');
@@ -243,3 +251,158 @@ if (document.readyState === 'loading') {
 } else {
     animateOnScroll();
 }
+
+// ===== ROCKET ANIMATION FOR DOKUMENTASI =====
+const btnDokumentasi = document.getElementById('btn-dokumentasi');
+const rocketOverlay = document.getElementById('rocketOverlay');
+
+if (btnDokumentasi && rocketOverlay) {
+    btnDokumentasi.addEventListener('click', (e) => {
+        e.preventDefault();
+        
+        // Show rocket animation
+        rocketOverlay.classList.add('active');
+        
+        // Redirect after animation
+        setTimeout(() => {
+            window.location.href = 'dokumentasi.html';
+        }, 1200);
+    });
+}
+
+// ===== TIMELINE SCROLL ANIMATION =====
+const timelineItems = document.querySelectorAll('.timeline-item');
+
+const timelineObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+        if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+        }
+    });
+}, {
+    threshold: 0.2,
+    rootMargin: '0px 0px -100px 0px'
+});
+
+timelineItems.forEach(item => {
+    timelineObserver.observe(item);
+});
+
+// ===== DOCUMENTATION SLIDER WITH VIDEO SUPPORT =====
+class DocSlider {
+    constructor(sliderElement) {
+        this.slider = sliderElement;
+        this.container = this.slider.querySelector('.doc-slider-container');
+        this.items = this.slider.querySelectorAll('.doc-slider-item');
+        this.prevBtn = this.slider.querySelector('.doc-prev');
+        this.nextBtn = this.slider.querySelector('.doc-next');
+        this.dotsContainer = this.slider.querySelector('.doc-slider-dots');
+        this.currentIndex = 0;
+        
+        this.init();
+    }
+    
+    init() {
+        // Hide controls if only one item
+        if (this.items.length <= 1) {
+            this.prevBtn.style.display = 'none';
+            this.nextBtn.style.display = 'none';
+            this.dotsContainer.style.display = 'none';
+            this.setupVideoControls();
+            return;
+        }
+        
+        // Create dots
+        this.items.forEach((_, index) => {
+            const dot = document.createElement('span');
+            dot.classList.add('doc-slider-dot');
+            if (index === 0) dot.classList.add('active');
+            dot.addEventListener('click', () => this.goToSlide(index));
+            this.dotsContainer.appendChild(dot);
+        });
+        
+        this.dots = this.dotsContainer.querySelectorAll('.doc-slider-dot');
+        
+        // Event listeners
+        this.prevBtn.addEventListener('click', () => this.prevSlide());
+        this.nextBtn.addEventListener('click', () => this.nextSlide());
+        
+        // Setup video controls
+        this.setupVideoControls();
+    }
+    
+    setupVideoControls() {
+        this.items.forEach((item) => {
+            if (item.tagName === 'VIDEO') {
+                // Prevent download prompt
+                item.setAttribute('controlsList', 'nodownload');
+                item.setAttribute('disablePictureInPicture', '');
+                
+                item.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (item.paused) {
+                        item.play();
+                        item.classList.add('playing');
+                        item.controls = true;
+                    } else {
+                        item.pause();
+                        item.classList.remove('playing');
+                    }
+                });
+                
+                item.addEventListener('ended', () => {
+                    item.classList.remove('playing');
+                    item.controls = false;
+                });
+                
+                // Prevent context menu
+                item.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                    return false;
+                });
+            }
+        });
+    }
+    
+    updateSlider() {
+        this.container.style.transform = `translateX(-${this.currentIndex * 100}%)`;
+        
+        // Pause all videos when changing slides
+        this.items.forEach((item) => {
+            if (item.tagName === 'VIDEO') {
+                item.pause();
+                item.classList.remove('playing');
+                item.controls = false;
+            }
+        });
+        
+        // Update dots
+        if (this.dots) {
+            this.dots.forEach((dot, index) => {
+                dot.classList.toggle('active', index === this.currentIndex);
+            });
+        }
+    }
+    
+    nextSlide() {
+        this.currentIndex = (this.currentIndex + 1) % this.items.length;
+        this.updateSlider();
+    }
+    
+    prevSlide() {
+        this.currentIndex = (this.currentIndex - 1 + this.items.length) % this.items.length;
+        this.updateSlider();
+    }
+    
+    goToSlide(index) {
+        this.currentIndex = index;
+        this.updateSlider();
+    }
+}
+
+// Initialize all documentation sliders
+window.addEventListener('DOMContentLoaded', () => {
+    const docSliders = document.querySelectorAll('.doc-slider');
+    docSliders.forEach(slider => new DocSlider(slider));
+});
